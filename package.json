@@ -6,6 +6,8 @@
     "start": "node index.js"
   },
   "dependencies": {
-    "mineflayer": "^4.16.0"
+    "mineflayer": "^4.16.0",
+    "express": "^4.19.2",   // <-- REQUIRED
+    "discord.js": "^14.16.3" // <-- REQUIRED if using discord.js
   }
 }
