@@ -3,8 +3,18 @@ const express = require("express"); // ← This was missing!
 const { Client, GatewayIntentBits } = require("discord.js");
 
 const app = express();
-app.get("/", (req, res) => res.send("Mineflayer bot is running!"));
-app.listen(3000, () => console.log("Web server started on port 3000"));
+
+// Use Render's assigned port if present
+const PORT = process.env.PORT || 3000;
+const HOST = "0.0.0.0"; // IMPORTANT
+
+app.get("/", (req, res) => {
+  res.send("Mineflayer bot is running!");
+});
+
+app.listen(PORT, HOST, () => {
+  console.log(`Web server started on http://${HOST}:${PORT}`);
+});
 
 const config = {
   mc: {
@@ -114,14 +124,28 @@ startMinecraftBot();
 // Discord → Minecraft relay
 // ======================
 discord.on("messageCreate", (msg) => {
+  // Ignore other bots
   if (msg.author.bot) return;
+
+  // Optional: only allow messages from the specific linked channel
+  if (msg.channel.id !== config.discord.channelId) return;
+
+  // Ensure MC bot is connected
   if (!bot || !bot.chat) return;
 
-  if (msg.content.startsWith(".cmd ")) {
-    const command = msg.content.slice(5);
+  const content = msg.content.trim();
+  if (!content) return;
+
+  // 🚀 If message starts with "/", treat as a command
+  if (content.startsWith("/")) {
+    const command = content.slice(1); // remove leading "/"
     bot.chat("/" + command);
-    msg.reply(`🟢 Ran command: /${command}`);
+    msg.reply(`🟢 Command executed: /${command}`).catch(console.error);
+    return;
   }
+
+  // 💬 Otherwise, send as normal chat to Minecraft
+  bot.chat(content);
 });
 
 // ======================
@@ -132,3 +156,11 @@ discord.once("clientReady", () => {
 });
 
 discord.login(config.discord.token);
+
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT EXCEPTION:", err);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("UNHANDLED REJECTION:", reason);
+});
