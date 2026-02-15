@@ -1,3 +1,5 @@
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 const mineflayer = require("mineflayer");
 const express = require("express");
 const { Client, GatewayIntentBits } = require("discord.js");
@@ -150,4 +152,5 @@ discord.on("messageCreate", (msg) => {
 // ================= GLOBAL ERRORS =================
 process.on("uncaughtException", console.error);
 process.on("unhandledRejection", console.error);
+
 
