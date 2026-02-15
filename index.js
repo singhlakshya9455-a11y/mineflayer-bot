@@ -149,6 +149,8 @@ function startMinecraftBot() {
       clearInterval(afkJumpInterval);
       afkJumpInterval = null;
     }
+    
+    setTimeout(startMinecraftBot, 5000);
+  });
 
-    setTimeout(startMinecraft
 
