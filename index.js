@@ -1,13 +1,8 @@
-// ======================
-// REQUIRE MODULES FIRST
-// ======================
 const mineflayer = require("mineflayer");
 const express = require("express");
 const { Client, GatewayIntentBits } = require("discord.js");
 
-// ======================
-// EXPRESS SERVER (for Render uptime)
-// ======================
+// ================= EXPRESS SERVER =================
 const app = express();
 const PORT = process.env.PORT || 3000;
 const HOST = "0.0.0.0";
@@ -20,9 +15,7 @@ app.listen(PORT, HOST, () => {
   console.log(`🌐 Web server running on http://${HOST}:${PORT}`);
 });
 
-// ======================
-// CONFIG
-// ======================
+// ================= CONFIG =================
 const config = {
   mc: {
     host: "play.pika-network.net",
@@ -37,11 +30,9 @@ const config = {
   },
 };
 
-// ======================
-// DISCORD CLIENT
-// ======================
+// ================= DISCORD =================
 if (!config.discord.token) {
-  console.error("❌ DISCORD_TOKEN not found in environment variables!");
+  console.error("❌ DISCORD_TOKEN missing!");
   process.exit(1);
 }
 
@@ -53,16 +44,13 @@ const discord = new Client({
   ],
 });
 
-// Debug logs
 console.log("🚀 Starting Discord login...");
 
 discord.once("ready", () => {
-  console.log(`🔹 Discord bot logged in as ${discord.user.tag}`);
+  console.log(`🔹 Discord logged in as ${discord.user.tag}`);
 });
 
-discord.on("error", (err) => {
-  console.error("Discord error:", err);
-});
+discord.on("error", console.error);
 
 discord.login(config.discord.token)
   .then(() => console.log("✅ Discord login successful"))
@@ -71,11 +59,9 @@ discord.login(config.discord.token)
     process.exit(1);
   });
 
-// ======================
-// MINECRAFT BOT
-// ======================
-let bot = null;
-let afkJumpInterval = null;
+// ================= MINECRAFT =================
+let bot;
+let afkJumpInterval;
 
 function startAfkJumpLoop() {
   if (afkJumpInterval) clearInterval(afkJumpInterval);
@@ -83,18 +69,13 @@ function startAfkJumpLoop() {
   afkJumpInterval = setInterval(() => {
     if (!bot || !bot.entity) return;
 
-    try {
-      bot.setControlState("jump", true);
+    bot.setControlState("jump", true);
+    setTimeout(() => {
+      if (bot) bot.setControlState("jump", false);
+    }, 300);
 
-      setTimeout(() => {
-        if (bot) bot.setControlState("jump", false);
-      }, 300);
-
-      console.log("⬆ AFK jump executed");
-    } catch (err) {
-      console.log("AFK jump error:", err);
-    }
-  }, 60000); // every 60 sec
+    console.log("⬆ AFK jump");
+  }, 60000);
 }
 
 function startMinecraftBot() {
@@ -108,17 +89,17 @@ function startMinecraftBot() {
   });
 
   bot.once("spawn", () => {
-    console.log("🟢 Minecraft bot joined server!");
+    console.log("🟢 Minecraft joined!");
 
-    setTimeout(() => {
-      if (config.mc.loginPassword) {
+    if (config.mc.loginPassword) {
+      setTimeout(() => {
         bot.chat(`/login ${config.mc.loginPassword}`);
         console.log("🔐 Sent /login");
-      }
-    }, 2000);
+      }, 2000);
+    }
 
     setTimeout(() => {
-      bot.chat(`/server survival`);
+      bot.chat("/server survival");
       console.log("🌍 Sent /server survival");
     }, 4000);
 
@@ -134,23 +115,35 @@ function startMinecraftBot() {
     }
   });
 
-  bot.on("kicked", (reason) => {
-    console.log("⚠ Minecraft kicked:", reason);
-  });
-
-  bot.on("error", (err) => {
-    console.log("Minecraft error:", err);
-  });
-
   bot.on("end", () => {
-    console.log("🔄 Minecraft disconnected. Reconnecting in 5s...");
-
-    if (afkJumpInterval) {
-      clearInterval(afkJumpInterval);
-      afkJumpInterval = null;
-    }
-    
+    console.log("🔄 Minecraft disconnected. Reconnecting...");
+    if (afkJumpInterval) clearInterval(afkJumpInterval);
     setTimeout(startMinecraftBot, 5000);
   });
 
+  bot.on("error", console.error);
+  bot.on("kicked", console.log);
+}
 
+startMinecraftBot();
+
+// ================= DISCORD → MC =================
+discord.on("messageCreate", (msg) => {
+  if (msg.author.bot) return;
+  if (msg.channel.id !== config.discord.channelId) return;
+  if (!bot) return;
+
+  const content = msg.content.trim();
+  if (!content) return;
+
+  if (content.startsWith("/")) {
+    bot.chat(content);
+    msg.reply(`🟢 Command executed: ${content}`).catch(console.error);
+  } else {
+    bot.chat(content);
+  }
+});
+
+// ================= GLOBAL ERRORS =================
+process.on("uncaughtException", console.error);
+process.on("unhandledRejection", console.error);
