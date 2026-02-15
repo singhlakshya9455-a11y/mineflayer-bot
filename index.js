@@ -45,6 +45,9 @@ const discord = new Client({
 });
 
 console.log("🚀 Starting Discord login...");
+console.log("Token exists?", !!config.discord.token);
+console.log("Token length:", config.discord.token?.length);
+
 
 discord.once("ready", () => {
   console.log(`🔹 Discord logged in as ${discord.user.tag}`);
@@ -147,3 +150,4 @@ discord.on("messageCreate", (msg) => {
 // ================= GLOBAL ERRORS =================
 process.on("uncaughtException", console.error);
 process.on("unhandledRejection", console.error);
+
