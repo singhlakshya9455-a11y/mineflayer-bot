@@ -2,17 +2,16 @@
   "name": "mineflayer-render-bot",
   "version": "1.0.0",
   "main": "index.js",
-  "engines": {
-    "node": "20.x"
-  },
   "scripts": {
     "start": "node index.js"
   },
   "dependencies": {
-    "mineflayer": "^4.16.0",
+    "mineflayer": "4.35.0",
     "express": "^4.19.2",
     "discord.js": "^14.16.3"
   }
 }
+
+
 
 
