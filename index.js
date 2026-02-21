@@ -46,11 +46,6 @@ const discord = new Client({
   ],
 });
 
-console.log("🚀 Starting Discord login...");
-console.log("Token exists?", !!config.discord.token);
-console.log("Token length:", config.discord.token?.length);
-
-
 discord.once("ready", () => {
   console.log(`🔹 Discord logged in as ${discord.user.tag}`);
 });
@@ -67,7 +62,10 @@ discord.login(config.discord.token)
 // ================= MINECRAFT =================
 let bot;
 let afkJumpInterval;
+let survivalInterval;
+let joinSurvivalInterval;
 
+// ---------- AFK Jump ----------
 function startAfkJumpLoop() {
   if (afkJumpInterval) clearInterval(afkJumpInterval);
 
@@ -83,6 +81,37 @@ function startAfkJumpLoop() {
   }, 60000);
 }
 
+// ---------- Survival Command System ----------
+function startSurvivalSystem() {
+  if (survivalInterval) clearInterval(survivalInterval);
+  if (joinSurvivalInterval) clearInterval(joinSurvivalInterval);
+
+  let count = 0;
+
+  // 5 times on join (10 sec gap)
+  joinSurvivalInterval = setInterval(() => {
+    if (!bot) return;
+
+    bot.chat("/server survival");
+    console.log(`🌍 Join survival attempt ${count + 1}/5`);
+
+    count++;
+
+    if (count >= 5) {
+      clearInterval(joinSurvivalInterval);
+
+      // Start 30 minute loop
+      survivalInterval = setInterval(() => {
+        if (!bot) return;
+
+        bot.chat("/server survival");
+        console.log("🔁 Sent /server survival (30 min auto)");
+      }, 30 * 60 * 1000);
+    }
+  }, 10000);
+}
+
+// ---------- Start Minecraft ----------
 function startMinecraftBot() {
   console.log("⛏ Starting Minecraft bot...");
 
@@ -103,12 +132,8 @@ function startMinecraftBot() {
       }, 2000);
     }
 
-    setTimeout(() => {
-      bot.chat("/server survival");
-      console.log("🌍 Sent /server survival");
-    }, 4000);
-
     startAfkJumpLoop();
+    startSurvivalSystem();
   });
 
   bot.on("chat", (username, message) => {
@@ -122,7 +147,11 @@ function startMinecraftBot() {
 
   bot.on("end", () => {
     console.log("🔄 Minecraft disconnected. Reconnecting...");
+
     if (afkJumpInterval) clearInterval(afkJumpInterval);
+    if (survivalInterval) clearInterval(survivalInterval);
+    if (joinSurvivalInterval) clearInterval(joinSurvivalInterval);
+
     setTimeout(startMinecraftBot, 5000);
   });
 
@@ -152,5 +181,6 @@ discord.on("messageCreate", (msg) => {
 // ================= GLOBAL ERRORS =================
 process.on("uncaughtException", console.error);
 process.on("unhandledRejection", console.error);
+
 
 
